@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model KeyValueMapping {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("key_value_mappings")
+}
+
+model Token {
+  id        String  @id @default(uuid())
+  mint      String  @db.VarChar(50)
+  name      String
+  symbol    String
+  uri       String
+  image_uri String
+  twitter   String  @default("")
+  telegram  String  @default("")
+  website   String  @default("")
+  desc      String  @default("")
+  creator   String  @db.VarChar(50)
+  sol_amount BigInt @default(0)
+  sell_token_amount BigInt @default(0)
+  is_completed Boolean @default(false)
+  is_withdraw Boolean @default(false)
+  is_launched Boolean @default(false)
+  is_burn Boolean @default(false)
+  created_at DateTime
+  purchase_histories PurchaseHistory[]
+  buyers Buyer[]
+  @@unique([mint])
+  @@map("tokens")
+}
+
+model PurchaseHistory {
+  id      String  @id @default(uuid())
+  buyer                 String
+  token_id              String
+  sol_in_amount         BigInt
+  token_output_amount   BigInt
+  hash                  String
+  // price                 Float
+  created_at            DateTime
+  token Token  @relation(fields: [token_id], references: [id])
+  @@map("purchase_histories")
+}
+
+model Buyer {
+  id      String  @id @default(uuid())
+  buyer                 String
+  token_id              String
+  token_amount          BigInt @default(0)
+  sol_amount            BigInt @default(0)
+  recovered_sol_amount  BigInt @default(0)
+  token Token  @relation(fields: [token_id], references: [id])
+  @@unique([token_id, buyer])
+  @@map("buyers")
+}
