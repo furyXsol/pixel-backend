@@ -47,10 +47,11 @@ model PurchaseHistory {
   id      String  @id @default(uuid())
   buyer                 String
   token_id              String
-  sol_in_amount         BigInt
-  token_output_amount   BigInt
+  is_buy                Boolean
+  sol_amount            BigInt
+  token_amount          BigInt
   hash                  String
-  // price                 Float
+  price                 Float
   created_at            DateTime
   token Token  @relation(fields: [token_id], references: [id])
   @@map("purchase_histories")
@@ -66,4 +67,12 @@ model Buyer {
   token Token  @relation(fields: [token_id], references: [id])
   @@unique([token_id, buyer])
   @@map("buyers")
+}
+
+model Staker {
+  id      String  @id @default(uuid())
+  staker                String
+  amount                BigInt @default(0)
+  @@unique([staker])
+  @@map("stakers")
 }

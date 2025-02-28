@@ -47,3 +47,7 @@ export type DataSeed = {
   // volume: string;
   timestamp: number;
 }
+
+export type StakerCount = {
+  count: number;
+}

@@ -9,7 +9,7 @@ export class TaskService {
   constructor(
     private readonly solanaPixel: SolanaPixelService,
   ) {
-    this.SYNCING['syncCreateTokenBuySellEvents'] = false
+    this.SYNCING['syncPixelEvents'] = false
     // this.SYNCING['syncNotReachedSOL'] = false
     this.SYNCING['syncCreateRaydiumPool'] = false
     this.SYNCING['syncSendSolToBuyer'] = false
@@ -18,15 +18,15 @@ export class TaskService {
 
   @Cron('*/10 * * * * *')
   async syncCreateTokenBuySellEvents() {
-    if (this.SYNCING['syncCreateTokenBuySellEvents']) return
-    this.logger.log('syncing Solana CreateToken Buy Events')
+    if (this.SYNCING['syncPixelEvents']) return
+    this.logger.log('syncing Pixel Events')
     try {
-      this.SYNCING['syncCreateTokenBuyEvents'] = true
-      await this.solanaPixel.syncCreateTokenBuySellEvents()
+      this.SYNCING['syncPixelEvents'] = true
+      await this.solanaPixel.syncPixelEvents()
     } catch(error) {
-      this.logger.error('Sync createBuyToken Buy Events:', JSON.stringify(error))
+      this.logger.error('Sync syncPixelEvents:', JSON.stringify(error))
     } finally {
-      this.SYNCING['syncCreateTokenBuySellEvents'] = false
+      this.SYNCING['syncPixelEvents'] = false
     }
   }
 

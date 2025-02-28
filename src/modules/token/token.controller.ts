@@ -64,4 +64,8 @@ export class TokenController {
         const {resolution, from, to} = querys
         return await this.service.getDataSeed(tokenMint, resolution, Number(from), Number(to));
     }
+    @Get('/staker_count')
+    async getStakerCount() {
+        return this.service.getStakerCount();
+    }
 }

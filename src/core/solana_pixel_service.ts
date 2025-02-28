@@ -148,7 +148,7 @@ export class SolanaPixelService {
     }
   }
 
-  async syncCreateTokenBuySellEvents() {
+  async syncPixelEvents() {
     const programId = new PublicKey(SOLANA_PIXEL_PROGRAMID);
     let lastSignature = await this.redis.get(
       `last-synced-timestamp-solana-pixel-events-${programId.toString()}`,
@@ -230,8 +230,19 @@ export class SolanaPixelService {
             `last-synced-timestamp-solana-pixel-events-${programId.toString()}`,
             txSig,
           );
+        } else if (event.name === 'StakeEvent') {
+          await this.solanaStakeEvent(
+            event,
+            tx.blockTime,
+            tx.signature,
+          );
+        } else if (event.name === 'UnstakeEvent') {
+          await this.solanaUnstakeEvent(
+            event,
+            tx.blockTime,
+            tx.signature,
+          );
         }
-
       }
     }
   }
@@ -303,7 +314,23 @@ export class SolanaPixelService {
         uri: tokenUri,
         creator: tokenCreator
       }
-    });
+    })
+
+    const tokens = await this.tokenService.getTokenList(false) // include isLanched token
+    this.socketIoService.broadcast("created_token", tokens)
+    this.socketIoService.broadcast("created_token_info", {
+      mint: tokenMint,
+      name:tokenName,
+      symbol: tokenSymbol,
+      desc,
+      telegram,
+      twitter,
+      website,
+      created_at: new Date(blockTime * 1000), //ms
+      image_uri: imageUri,
+      uri: tokenUri,
+      creator: tokenCreator
+    })
   }
 
   async solanaBuyTokenEvent(
@@ -344,15 +371,16 @@ export class SolanaPixelService {
         }
       });
 
-      await this.prisma.purchaseHistory.create({
+      const res = await this.prisma.purchaseHistory.create({
         data: {
           buyer,
           token_id: token.id,
-          sol_in_amount: BigInt(solAmount),
-          token_output_amount: BigInt(tokenOutput),
+          is_buy: true,
+          sol_amount: BigInt(solAmount),
+          token_amount: BigInt(tokenOutput),
           created_at: new Date(blockTime*1000),
           hash: txSig,
-          // price: Number(solAmount)/Number(tokenOutput),
+          price: Number(solAmount)/Number(tokenOutput),
         },
       });
       const buyerData = await this.prisma.buyer.findUnique({
@@ -388,6 +416,20 @@ export class SolanaPixelService {
           }
         });
       }
+      this.socketIoService.broadcast("buy_token", {
+        mint: token.mint,
+        image_url: token.image_uri,
+        name: token.name,
+        symbol: token.symbol,
+        sol_amount: Number(solAmount),
+        buyer: buyer
+      })
+
+      this.socketIoService.broadcast("chart_data", {
+        mint: token.mint,
+        price: Number(solAmount)/Number(tokenOutput),
+        time: res.created_at.getTime(),
+      })
     }catch (e) {
       console.log(e)
     }
@@ -428,6 +470,103 @@ export class SolanaPixelService {
           sell_token_amount: totalSellTokenAmount,
         }
       });
+
+      const res = await this.prisma.purchaseHistory.create({
+        data: {
+          buyer: seller,
+          token_id: token.id,
+          is_buy: false,
+          sol_amount: BigInt(solOutputAmount),
+          token_amount: BigInt(tokenInput),
+          created_at: new Date(blockTime*1000),
+          hash: txSig,
+          price: Number(solOutputAmount)/Number(tokenInput),
+        },
+      })
+      this.socketIoService.broadcast("chart_data", {
+        mint: token.mint,
+        price: Number(solOutputAmount)/Number(tokenInput),
+        time:res.created_at.getTime(),
+      })
+
+
+    }catch (e) {
+      console.log(e)
+    }
+  }
+
+  async solanaStakeEvent(
+    event: anchor.Event,
+    blockTime: number,
+    txSig: string,
+  ) {
+    try {
+      const staker = event.data.staker.toString()
+      const amount = event.data.amount.toString()
+      if (BigInt(amount) === BigInt(0)) {
+        return
+      }
+       // check if staker is exists
+      const stakerInfo = await this.prisma.staker.findUnique({
+        where: {
+          staker
+        },
+      })
+      if (stakerInfo) {
+        const newAmount = stakerInfo.amount + BigInt(amount)
+        await this.prisma.staker.update({
+          where: {
+            staker
+          },
+          data: {
+            amount: newAmount,
+          }
+        })
+       } else {
+        await this.prisma.staker.create({
+          data: {
+            staker,
+            amount: BigInt(amount)
+          }
+        })
+      }
+    }catch (e) {
+      console.log(e)
+    }
+  }
+
+  async solanaUnstakeEvent(
+    event: anchor.Event,
+    blockTime: number,
+    txSig: string,
+  ) {
+    try {
+      const staker = event.data.staker.toString()
+      const amount = event.data.amount.toString()
+      if (BigInt(amount) === BigInt(0)) {
+        return
+      }
+       // check if staker is exists
+      const stakerInfo = await this.prisma.staker.findUnique({
+        where: {
+          staker
+        },
+      })
+      if (!stakerInfo) {
+        return
+      }
+      let newAmount = BigInt(0)
+      if (stakerInfo.amount > BigInt(amount)){
+        newAmount = stakerInfo.amount - BigInt(amount)
+      }
+      await this.prisma.staker.update({
+        where: {
+          staker
+        },
+        data: {
+          amount: newAmount,
+        }
+      })
     }catch (e) {
       console.log(e)
     }

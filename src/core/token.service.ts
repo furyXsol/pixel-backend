@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { DataSeed, TokenInfo, TokenInfoWithBuyer, TokenMetadata, ResPostMetadata, TradeHistory } from 'src/modules/token/token.type';
+import {
+  DataSeed,
+  TokenInfo,
+  TokenInfoWithBuyer,
+  TokenMetadata,
+  ResPostMetadata,
+  TradeHistory,
+  StakerCount,
+} from 'src/modules/token/token.type';
 import { formatInTimeZone } from 'date-fns-tz'
 import { Prisma } from '@prisma/client';
 @Injectable()
@@ -10,11 +18,13 @@ export class TokenService {
   ) {}
 
   async getTokenList(isLaunched: boolean): Promise<TokenInfo[]> {
-    const tokens =  await this.prisma.token.findMany({
-      where: {
-        is_launched: isLaunched
-      }
-    });
+    const tokens =  await this.prisma.token.findMany(
+      isLaunched ? {
+        where: {
+          is_launched: isLaunched
+        }
+      } : undefined
+    )
     return tokens.sort((a,b)=>{return Number(b.sol_amount) - Number(a.sol_amount)}).map((token) => ({
       mint: token.mint,
       name: token.name,
@@ -78,8 +88,8 @@ export class TokenService {
     return history.map(historyItem => ({
       buyer: historyItem.buyer,
       signature: historyItem.hash,
-      solAmount: Number(historyItem.sol_in_amount),
-      tokenAmount: Number(historyItem.token_output_amount)
+      solAmount: Number(historyItem.sol_amount),
+      tokenAmount: Number(historyItem.token_amount)
     }))
   }
 
@@ -265,6 +275,18 @@ export class TokenService {
       ) as DataSeed[]
     }else {
       return []
+    }
+  }
+  async getStakerCount(): Promise<StakerCount> {
+    const count = await this.prisma.staker.count({
+      where: {
+        NOT : {
+          amount: BigInt(0)
+        }
+      }
+    })
+    return {
+      count
     }
   }
 }
