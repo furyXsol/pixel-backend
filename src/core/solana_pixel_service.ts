@@ -236,11 +236,19 @@ export class SolanaPixelService {
             tx.blockTime,
             tx.signature,
           );
+          await this.redis.set(
+            `last-synced-timestamp-solana-pixel-events-${programId.toString()}`,
+            txSig,
+          );
         } else if (event.name === 'UnstakeEvent') {
           await this.solanaUnstakeEvent(
             event,
             tx.blockTime,
             tx.signature,
+          );
+          await this.redis.set(
+            `last-synced-timestamp-solana-pixel-events-${programId.toString()}`,
+            txSig,
           );
         }
       }
@@ -500,6 +508,7 @@ export class SolanaPixelService {
     blockTime: number,
     txSig: string,
   ) {
+    console.log('--------stakeEvent:')
     try {
       const staker = event.data.staker.toString()
       const amount = event.data.amount.toString()

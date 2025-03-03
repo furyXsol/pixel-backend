@@ -37,6 +37,10 @@ export class TokenController {
     async getTimer() {
         return getEndTime()
     }
+    @Get('/staker_count')
+    async getStakerCount() {
+        return await this.service.getStakerCount();
+    }
     // @Get('/top2')
     // async getTop2() {
     //     return await this.service.getTop2();
@@ -63,9 +67,5 @@ export class TokenController {
         const {id: tokenMint } = params;
         const {resolution, from, to} = querys
         return await this.service.getDataSeed(tokenMint, resolution, Number(from), Number(to));
-    }
-    @Get('/staker_count')
-    async getStakerCount() {
-        return this.service.getStakerCount();
     }
 }

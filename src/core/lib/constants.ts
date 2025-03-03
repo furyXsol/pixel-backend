@@ -1,7 +1,7 @@
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { Keypair } from "@solana/web3.js";
 
-export const SOLANA_PIXEL_PROGRAMID = '2A4pYsctJgE2KNSspqipdZbv2sF3Gmyk8Ad2iZs2PtyJ'; //devnet
+export const SOLANA_PIXEL_PROGRAMID = 'wiWRrYr15nFyukShEqe7MQy8cQzxTx2QnAGg7EjDc2x'; //devnet
 
 //base58 encoding admin private key
 // pubkey: HNNK9CZ9KG6NS2ffxhmaqP33HitfonDyu4utNsF78XTV
